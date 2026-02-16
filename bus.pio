@@ -1,8 +1,8 @@
-.define public A0_PIN 0	// 18 address bits starting at GPIO 0
-.define public DIR_PIN 19	// set direction of data pin buffer
-.define public OE_PIN 20	// Output Enable - pin 22 of 27c512, /CSn on MSX slot
-.define public CE_PIN 21	// Chip Enable - pin 20 of 27c512, /SLTSL on MSX slot
-.define public D0_PIN 22	// 8 data bits
+.define public A0_PIN 8	// 18 address bits starting at GPIO 0
+.define public DIR_PIN 30	// set direction of data pin buffer
+.define public OE_PIN 24	// Output Enable - pin 22 of 27c512, /CSn on MSX slot
+.define public CE_PIN 26	// Chip Enable - pin 20 of 27c512, /SLTSL on MSX slot
+.define public D0_PIN	0	// 8 data bits
 .define public PIN_COUNT 32
 .define public DATA_WIDTH 8
 

@@ -76,17 +76,22 @@ void setup_pio_irq_logic()
   for (int pin = D0_PIN; pin < D0_PIN + 8; pin++)
     pio_gpio_init(pio0, pin);
 
+  // Initialize the Address pins
+  for (int pin = A0_PIN; pin < A0_PIN + 16; pin++)
+    pio_gpio_init(pio0, pin);
+    
   // Invert /CE pin to make it easer to use JMP in PIO
+  pio_gpio_init(pio0, CE_PIN);
   gpio_set_inover(CE_PIN, GPIO_OVERRIDE_INVERT);
-
+  
   // Setup state machine that checks when we are selected
   offset = pio_add_program(pio0, &wait_sel_program);
   conf = wait_sel_program_get_default_config(offset);
   sm_config_set_in_pins(&conf, 0);
   sm_config_set_in_shift(&conf, true, true, 32);
 
-  pio_sm_set_consecutive_pindirs(pio0, SM_WAITSEL, A0_PIN, 18, false);
-  pio_sm_set_consecutive_pindirs(pio0, SM_WAITSEL, OE_PIN, 2, false);
+  pio_sm_set_consecutive_pindirs(pio0, SM_WAITSEL, A0_PIN, 16, false);
+  pio_sm_set_consecutive_pindirs(pio0, SM_WAITSEL, OE_PIN, 6, false);
   pio_sm_set_consecutive_pindirs(pio0, SM_WAITSEL, D0_PIN, 8, false);
 
   pio_sm_init(pio0, SM_WAITSEL, offset, &conf);
@@ -106,7 +111,7 @@ void setup_pio_irq_logic()
   pio_sm_set_consecutive_pindirs(pio0, SM_READ, DIR_PIN, 1, true);
   pio_sm_set_consecutive_pindirs(pio0, SM_READ, D0_PIN, 8, false);
   sm_config_set_sideset_pins(&conf, DIR_PIN);
-  sm_config_set_sideset(&conf, 2, true, false);  // 1-bit, optional = true, pindirs = false
+  sm_config_set_sideset(&conf, 1, true, false);  // 1-bit, optional = true, pindirs = false
 
   // Set JMP pin base to CE (or OE depending on your design)
   sm_config_set_jmp_pin(&conf, CE_PIN);     // e.g. GPIO20
@@ -124,7 +129,7 @@ void __time_critical_func(romulan)(void)
   uint8_t *rom_ptr = ROM;
   uint32_t last_addr = -1;
 
-
+  
   setup_pio_irq_logic();
 
   while (true) {
@@ -132,7 +137,9 @@ void __time_critical_func(romulan)(void)
       tight_loop_contents();
 
     addrdata = pio0->rxf[SM_WAITSEL];
-    addr = addrdata & 0xFFFF;
+    //addr = addrdata & 0xFFFF;
+    addr = (addrdata >> 8) & 0xFFFF;  /* mk2s this depends on position of address pins */
+    
     if (addr == last_addr)
       continue;
 
@@ -263,13 +270,15 @@ int main()
   bool our_command = false;
   std::string command_buf;
 
-
-  multicore_launch_core1(romulan);
   stdio_init_all();
   stdio_set_translate_crlf(&stdio_usb, false);
-
+  sleep_ms(2000);
+  printf("Waiting for USB connection\n");
   while (!stdio_usb_connected())
-    ;
+  ;
+  printf("connected\n");
+
+  multicore_launch_core1(romulan);
 
   while (true) {
     if (multicore_fifo_rvalid()) {
