@@ -277,14 +277,14 @@ int main()
   while (!stdio_usb_connected())
   ;
   printf("connected\n");
-
+  
   multicore_launch_core1(romulan);
 
   while (true) {
     if (multicore_fifo_rvalid()) {
       addrdata = multicore_fifo_pop_blocking();
-      addr = addrdata & 0xFFFF;
-      data = (addrdata >> (18 + 4)) & 0xFF;
+      addr = (addrdata >> 8) & 0xFFFF;
+      data = addrdata & 0xFF;
       //printf("Received $%04x:$%02x\n", addr, data);
       putchar(data);
     }
